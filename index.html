@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시너지 제품 계산기</title>
+<style>
+:root{--bg:#f3f6f4;--card:#ffffff;--ink:#16302b;--sub:#5d726d;--line:#d9e3df;--main:#0f6b5c;--main-d:#0a4f44;--hi:#e8f3f0;--warn:#b4472f;--rad:10px}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1a18;--card:#17262a;--ink:#e6f0ed;--sub:#93aaa4;--line:#27403b;--main:#3fb8a2;--main-d:#2c9985;--hi:#1b312e;--warn:#e58b72}}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;line-height:1.5;padding:max(16px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:1.6rem;margin:8px 0 4px;letter-spacing:-0.02em}
+.desc{margin:0 0 18px;color:var(--sub);font-size:.92rem}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:16px}
+label.field{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px}
+.inrow{display:flex;gap:8px}
+#budget{flex:1;min-width:0;font-size:1.25rem;padding:12px 14px;border:1px solid var(--line);border-radius:var(--rad);background:var(--bg);color:var(--ink);font-weight:600}
+#budget:focus,#months:focus,#go:focus,.opt:focus-within{outline:2px solid var(--main);outline-offset:1px}
+#go{padding:0 22px;border:0;border-radius:var(--rad);background:var(--main);color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+#go:hover{background:var(--main-d)}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.opt{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;font-size:.9rem;cursor:pointer;user-select:none}
+.opt input{accent-color:var(--main);margin:0}
+.opt:has(input:checked){background:var(--hi);border-color:var(--main)}
+#info{margin:16px 2px 8px;color:var(--sub);font-size:.9rem}
+.res{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:14px 16px;margin-bottom:10px}
+.res.top{border-color:var(--main);border-width:2px}
+.rh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.rk{font-weight:700;color:var(--main)}
+.rem{font-weight:700}
+.rem.zero{color:var(--main)}
+.pk{margin:10px 0 0;padding:0;list-style:none}
+.pk li{padding:8px 0;border-top:1px solid var(--line)}
+.pn{font-weight:600}
+.pc{font-size:.84rem;color:var(--sub);margin-top:2px}
+.tabs{display:flex;gap:2px;margin:0 0 14px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{flex:1 0 auto;white-space:nowrap;padding:11px 12px;border:0;border-bottom:3px solid transparent;background:none;color:var(--sub);font-size:1rem;font-weight:600;cursor:pointer}
+.tab.on{color:var(--main);border-bottom-color:var(--main)}
+.tab:focus-visible{outline:2px solid var(--main);outline-offset:-2px}
+.srch{width:100%;font-size:1rem;padding:10px 12px;border:1px solid var(--line);border-radius:var(--rad);background:var(--bg);color:var(--ink)}
+.tblw{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--rad);overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:.9rem}
+.tbl th,.tbl td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.tbl th{font-size:.82rem;color:var(--sub);white-space:nowrap}
+.tbl .n{text-align:right;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.mut{color:var(--sub)}
+.bd{display:inline-block;margin-left:4px;padding:0 6px;border-radius:999px;background:var(--hi);color:var(--main);font-size:.72rem;font-weight:700;vertical-align:1px}
+.gt{margin:16px 2px 8px;font-weight:700;color:var(--sub);font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:.8rem;color:var(--sub)}
+.grid b{display:block;color:var(--ink);font-size:.95rem}
+@media (max-width:480px){.grid{grid-template-columns:repeat(2,1fr)}}
+.ezsum{position:sticky;top:0;z-index:2;margin-top:12px}
+.ezg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;font-size:.82rem;color:var(--sub)}
+.ezg b{display:block;color:var(--ink);font-size:1rem}
+.ezh{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:.88rem;color:var(--main);font-weight:600}
+.st{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:1.1rem;cursor:pointer;vertical-align:middle}
+.st:focus-visible{outline:2px solid var(--main)}
+.qn{display:inline-block;min-width:26px;text-align:center;font-weight:700;vertical-align:middle}
+.tbl tr.sel td{background:var(--hi)}
+.tbl tr.sel td:first-child{box-shadow:inset 4px 0 0 var(--main)}
+.tbl tr.sel .qn{color:var(--main);font-size:1.05rem}
+.qb{display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;background:var(--main);color:var(--card);font-size:.8rem;font-weight:700;vertical-align:1px}
+.ezreset{display:block;margin:12px auto 0;padding:10px 18px;border:1px solid var(--line);border-radius:var(--rad);background:var(--card);color:var(--sub);font-size:.9rem;cursor:pointer}
+[hidden]{display:none!important}
+#months{flex:none;width:76px;font-size:1.25rem;padding:12px 8px;border:1px solid var(--line);border-radius:var(--rad);background:var(--bg);color:var(--ink);font-weight:600;text-align:center}
+.suf{align-self:center;color:var(--sub);font-size:.95rem}
+.sgh{font-size:.84rem;color:var(--main);font-weight:700;border-top:1px solid var(--line);padding-top:8px}
+.sum{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:.95rem}
+.sum b{font-size:1.05rem}
+.empty{background:var(--card);border:1px dashed var(--warn);border-radius:var(--rad);padding:16px;color:var(--warn);font-weight:600}
+@media (max-width:480px){h1{font-size:1.35rem}#go{padding:0 16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>시너지 제품 계산기</h1>
+<p class="desc">금액을 입력하면 예산에 가장 가까운 패키지 구성과 총 CV를 보여줍니다.</p>
+<div class="tabs" role="tablist">
+<button type="button" class="tab on" data-t="calc" role="tab">계산기</button>
+<button type="button" class="tab" data-t="prod" role="tab">제품별 가격</button>
+<button type="button" class="tab" data-t="pkg" role="tab">패키지</button>
+<button type="button" class="tab" data-t="ez" role="tab">이지원</button>
+<button type="button" class="tab" data-t="mg" role="tab">원팩</button>
+</div>
+<section id="v-calc">
+<div class="panel">
+<label class="field" for="budget" id="lblBudget">예산 (원)</label>
+<div class="inrow">
+<input id="budget" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 1,000,000">
+<input id="months" type="number" inputmode="numeric" min="1" max="60" value="6" aria-label="개월 수" hidden>
+<span id="mSuf" class="suf" hidden>개월</span>
+<button id="go" type="button">계산</button>
+</div>
+<div class="opts">
+<label class="opt"><input type="radio" name="im" value="t" checked>총 금액</label>
+<label class="opt"><input type="radio" name="im" value="m">월 금액 × 개월</label>
+</div>
+</div>
+<div id="info"></div>
+<div id="out"></div>
+</section>
+<section id="v-prod" hidden>
+<div class="panel">
+<label class="field" for="q">제품 검색</label>
+<input id="q" class="srch" type="text" autocomplete="off" placeholder="제품명 입력">
+<label class="field" for="sortSel" style="margin-top:12px">정렬</label>
+<select id="sortSel" class="srch">
+<option value="pop">인기순</option>
+<option value="cv">CV 높은순</option>
+<option value="cvl">CV 낮은순</option>
+<option value="pl">가격 낮은순</option>
+<option value="ph">가격 높은순</option>
+<option value="name">이름순</option>
+<option value="val">가성비순 (CV당 가격)</option>
+</select>
+</div>
+<div class="tblw"><table class="tbl"><thead><tr><th>제품명</th><th class="n">소비자가</th><th class="n">회원가</th><th class="n">CV</th></tr></thead><tbody id="prodBody"></tbody></table></div>
+</section>
+<section id="v-pkg" hidden>
+<div id="pkgBody"></div>
+</section>
+<section id="v-mg" hidden>
+<div class="pc" style="margin:0 2px 10px">마진은 소비자가에서 회원가를 뺀 금액입니다.</div>
+<div id="mgOut"></div>
+</section>
+<section id="v-ez" hidden>
+<div class="panel">
+<div class="pc">이지원(정기 구독)은 회원가 기준 10% 할인입니다.</div>
+<input id="ezq" class="srch" type="text" autocomplete="off" placeholder="제품 검색" style="margin-top:10px">
+</div>
+<div id="ezSum" class="res ezsum"></div>
+<div class="tblw"><table class="tbl"><thead><tr><th>제품명</th><th class="n">이지원가</th><th class="n">CV</th><th class="n">수량</th></tr></thead><tbody id="ezBody"></tbody></table></div>
+<button type="button" id="ezReset" class="ezreset">수량 초기화</button>
+</section>
+</div>
+<script>
+var DATA=[
+["슈퍼 패키지",200,559430,391600,"프로알지 2, 비타리프트 3, 페퍼민트 오일 1",367700,"6.10%",""],
+["원팩 주스 (4주)",210,610710,427500,"프로알지 2, 시너비트 1, 프로가드 2",398300,"6.80%","주스 4주"],
+["원팩 주스 (8주)",400,1221420,855000,"프로알지 4, 시너비트 2, 프로가드 4",756600,"11.50%","주스 8주"],
+["뉴 맥시멈 메가 원팩 4 라이트",470,1423280,997500,"프로알지 2, 시너비트 1, 프로가드 2, 비프라임 2, 바이타팩 1, 컨트롤 1, 트루그린(라임) 2, 맥시멈 4, 지퍼백 4",870000,"12.80%","메가원팩 4주"],
+["7일 원팩 5",600,2027100,1419000,"프로알지 5, 시너비트 5, 프로가드 5, 비프라임 5",1198000,"15.60%","7일 x 5세트"],
+["플레인 메가 원팩 4",600,2061830,1443300,"프로알지 4, 시너비트 2, 프로가드 3, 비프라임 3, 바이타팩 1, 컨트롤 1, 트루그린(라임) 2, 플레인 4",1215000,"15.80%","7일 + 메가원팩 4주 + 프로알지 1"],
+["뉴 맥시멈 메가 원팩 4",600,1977270,1385300,"프로알지 4, 시너비트 2, 프로가드 3, 비프라임 3, 바이타팩 1, 컨트롤 1, 트루그린(라임) 2, 맥시멈 4, 지퍼백 4",1188000,"14.20%","7일 + 메가원팩 4주 + 프로알지 1"],
+["메가주스 원팩 6",600,2000690,1400500,"프로알지 4, 시너비트 2, 프로가드 3, 비프라임 4, 바이타팩 2, 컨트롤 2, 트루그린(라임) 3",1215000,"13.20%",""],
+["플레인 원팩 8",600,2049980,1435000,"프로알지 4, 시너비트 2, 프로가드 4, 플레인 8",1198000,"16.50%","주스 8주 + 쉐이크 8주"],
+["뉴 맥시멈 원팩 8",600,1929570,1353100,"프로알지 4, 시너비트 2, 프로가드 4, 비프라임 1, 맥시멈 8, 지퍼백 8",1142000,"15.60%","주스 8주 + 쉐이크 8주 + 비프라임 1"],
+["플레인 메가 원팩 8",1000,3626390,2538500,"프로알지 6, 시너비트 3, 프로가드 6, 비프라임 4, 바이타팩 2, 컨트롤 2, 트루그린(라임) 4, 플레인 8",2010000,"20.80%","메가원팩 8주 + 주스 4주"],
+["뉴 맥시멈 메가 원팩 8",1000,3457270,2422500,"프로알지 6, 시너비트 3, 프로가드 6, 비프라임 4, 바이타팩 2, 컨트롤 2, 트루그린(라임) 4, 맥시멈 8, 지퍼백 8",1921000,"20.70%","메가원팩 8주 + 주스 4주"],
+["뉴 맥시멈 플레인 메가 원팩 8",1000,3541830,2480500,"프로알지 6, 시너비트 3, 프로가드 6, 비프라임 4, 바이타팩 2, 컨트롤 2, 트루그린(라임) 4, 맥시멈 4, 플레인 4, 지퍼백 4",1967000,"20.70%","메가원팩 8주 + 주스 4주"],
+["7일 원팩 10",1100,4054200,2838000,"프로알지 10, 시너비트 10, 프로가드 10, 비프라임 10",2185300,"23.00%","7일 x 10세트"],
+["플레인 메가 원팩 12",1500,5793650,4055600,"프로알지 10, 시너비트 5, 프로가드 10, 비프라임 7, 바이타팩 3, 컨트롤 3, 트루그린(라임) 6, 플레인 12",3035000,"25.20%","메가원팩 12주 + 주스 8주 + 프라임 1"],
+["뉴 맥시멈 메가 원팩 12",1500,5539970,3881600,"프로알지 10, 시너비트 5, 프로가드 10, 비프라임 7, 바이타팩 3, 컨트롤 3, 트루그린(라임) 6, 맥시멈 12, 지퍼백 12",2892000,"25.50%","메가원팩 12주 + 주스 8주 + 프라임 1"],
+["뉴 맥시멈 플레인 메가 원팩 12",1500,5666810,3968600,"프로알지 10, 시너비트 5, 프로가드 10, 비프라임 7, 바이타팩 3, 컨트롤 3, 트루그린(라임) 6, 맥시멈 6, 플레인 6, 지퍼백 6",2960500,"25.40%","메가원팩 12주 + 주스 8주 + 프라임 1"],
+["뉴 크런치 혼합 메가 원팩 12",1500,5793650,4055600,"프로알지 10, 시너비트 5, 프로가드 10, 비프라임 7, 바이타팩 3, 컨트롤 3, 트루그린(라임) 6, 초코맛 6, 곡물맛 6",3035000,"25.20%","메가원팩 12주 + 주스 8주 + 프라임 1"],
+["뉴 플레인 메가 원팩 16",1800,7147350,5003200,"프로알지 12, 시너비트 6, 프로가드 11, 비프라임 8, 바이타팩 4, 컨트롤 4, 트루그린(라임) 8, 플레인 16",3650000,"27.00%","메가원팩 16주 + 주스 8주 (프로가드 1 부족)"],
+["뉴 맥시멈 메가 원팩 16",1800,6809110,4771200,"프로알지 12, 시너비트 6, 프로가드 11, 비프라임 8, 바이타팩 4, 컨트롤 4, 트루그린(라임) 8, 맥시멈 16, 지퍼백 16",3483000,"27.00%","메가원팩 16주 + 주스 8주 (프로가드 1 부족)"],
+["뉴 맥시멈 플레인 메가 원팩 16",1800,6978230,4887200,"프로알지 12, 시너비트 6, 프로가드 11, 비프라임 8, 바이타팩 4, 컨트롤 4, 트루그린(라임) 8, 맥시멈 8, 플레인 8, 지퍼백 8",3567600,"27.00%","메가원팩 16주 + 주스 8주 (프로가드 1 부족)"],
+["크런치 혼합 메가 원팩 16",1800,7147350,5003200,"프로알지 12, 시너비트 6, 프로가드 11, 비프라임 8, 바이타팩 4, 컨트롤 4, 트루그린(라임) 8, 초코맛 8, 곡물맛 8",3650000,"27.00%","메가원팩 16주 + 주스 8주 (프로가드 1 부족)"]
+];
+var SINGLES=[
+["노니-플러스",71290,49900,28,0],
+["더블번",90000,63000,37,0],
+["데이캄 멀티비타민",90000,63000,37,0],
+["맥시멈 프로틴 스탠딩 백",81430,57000,31,1],
+["리브-케어 복합비타민",99860,69900,41,0],
+["미스티카",73860,51700,30,0],
+["바이옴디티엑스",129000,90300,47,0],
+["바이타팩",115430,80800,46,1],
+["밸런스 쉐이크 크런치 초콜릿맛",103570,72500,40,0],
+["밸런스 쉐이크 크런치 곡물맛",103570,72500,40,0],
+["밸런스 쉐이크 플레인",103570,72500,40,1],
+["뷰티 에센셜 멀티비타민 & 아연",44570,31200,18,0],
+["브래니악스 종합비타민&멀티무기질",58140,40700,25,0],
+["비타리프트",81000,56700,32,0],
+["비타민D3",33710,23600,14,0],
+["비-프라임",48710,34100,19,1],
+["시너맥스",81860,57300,33,0],
+["시너뷰 콜라겐",63000,44100,24,0],
+["시너비트",102710,71900,40,1],
+["시너지 멀티엔자임",54860,38400,21,0],
+["시너지 아쿠아셀 알티지 오메가-3",74860,52400,28,0],
+["시너지 코큐텐",48000,33600,20,0],
+["시너핏 다이어트 젤리",55570,38900,21,0],
+["오스테오부스트 칼슘 비타민D",46860,32800,19,0],
+["유알아이-헬스 혼합비타민",59290,41500,24,0],
+["음료 3종(노니, 시너맥스, 미스티카)",227010,158900,91,0],
+["이지-오 혼합비타민&아연",49570,34700,22,0],
+["카페 인디마 디팻",67570,47300,25,0],
+["컨트롤 FOS",108000,75600,42,1],
+["트루그린 플러스 라임향",81000,56700,32,1],
+["트루그린 플러스 스피어민트향",81000,56700,32,0],
+["파워메토 플러스",111000,77700,44,0],
+["프로바이오틱스 플러스",72000,50400,27,0],
+["프로알지-9 플러스 프로가드",105430,73800,41,1],
+["프로알지-9플러스",148570,104000,59,1],
+["프로알지-9플러스 5패킷",0,18900,10,0],
+["프로알지-9 플러스 액티브 혼합비타민",148570,104000,59,0],
+["프로알지-9플러스 퍼플웨이브 멀티비타민",148570,104000,59,0],
+["후라보-씨 멀티비타민 & 아연",19290,13500,8,0],
+["라마라 래디언스 오일",57000,39900,22,0],
+["라마라 데일리 너리싱 클렌저",45000,31500,17,0],
+["라마라 스킨 액티베이팅 토너",48000,33600,18,0],
+["라마라 리빌링 아이 크림",52500,36800,20,0],
+["라마라 모이스처 부스트 에멀전",57000,39900,22,0],
+["라마라 인텐스 하이드레이션 크림",87000,60900,34,0],
+["라마라 안티폴루션 엑스폴리에이팅 클렌저",35200,24700,14,0],
+["라마라 안티폴루션 리바이탈라이징 컨센트레이트",54000,37800,21,0],
+["라마라 선 쉴드",54000,37800,21,0],
+["라마라 딥코어 PDRN 앰플",111400,78000,43,1],
+["페퍼민트 오일",19290,13500,8,0],
+["시너후레쉬 퓨어 칫솔",18000,12600,7,0],
+["시너후레쉬 퓨어 치약",8570,6000,3,0],
+["시너후레쉬 퓨어 여행용 세트",6000,4200,1,0],
+["시너후레쉬 퓨어 여행용 세트(3+1)",18000,12600,3,0],
+["시너후레쉬 퓨어 오랄케어 세트",0,18600,10,0],
+["라마라 하이드레이팅 샴푸",28500,20000,10,0],
+["라마라 하이드레이팅 컨디셔너",28500,20000,10,0],
+["라마라 너리싱 바디 워시",31500,22100,12,0],
+["라마라 리플레니싱 바디 로션",33000,23100,13,0],
+["라마라 수딩 베라 젤",33000,23100,13,0],
+["라마라 리뉴잉 핸드 크림",15000,10500,5,0]
+];
+var SN=SINGLES.length;
+var N=DATA.length;
+var MAXK=30;
+var REC_MAX=5;
+var CAP=6000000;
+var POPW=2;
+var elBudget=document.getElementById("budget");
+var elMonths=document.getElementById("months");
+var elSuf=document.getElementById("mSuf");
+var elLbl=document.getElementById("lblBudget");
+var elGo=document.getElementById("go");
+var elInfo=document.getElementById("info");
+var elOut=document.getElementById("out");
+var elIm=document.getElementsByName("im");
+var candReady=false;
+var cName=[];
+var cTier=[];
+var cPay=[];
+var cCon=[];
+var cMem=[];
+var cCv=[];
+var cDesc=[];
+var cNote=[];
+var cKind=[];
+var recC=[];
+var recK=[];
+var recRem=[];
+var recCv=[];
+var recLeft=[];
+var budget=0;
+var monthly=0;
+var months=0;
+var isMonthly=false;
+var useSingles=true;
+var g=1;
+var U=0;
+var K=0;
+var KI=0;
+var sPrice=[];
+var sUnit=[];
+var sCv=[];
+var sName=[];
+var sPop=[];
+var sCon=[];
+var iUnit=[];
+var iCv=[];
+var iScore=[];
+var iBase=[];
+var iMul=[];
+var scnt=null;
+var dpscore=null;
+var dpreal=null;
+var take=null;
+var bs=null;
+var fRem=0;
+var fCv=0;
+
+function fmt(n){return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");}
+
+function gcd(a,b){
+  while(b){var t=a%b;a=b;b=t;}
+  return a;
+}
+
+function getIm(){
+  if(!elIm){return "t";}
+  for(var k=0;k<elIm.length;k++){
+    if(elIm[k].checked){return elIm[k].value;}
+  }
+  return "t";
+}
+
+function syncIm(){
+  var m=getIm()==="m";
+  if(elMonths){elMonths.hidden=!m;}
+  if(elSuf){elSuf.hidden=!m;}
+  if(elLbl){elLbl.textContent=m?"월 금액 (원) × 개월":"예산 (원)";}
+  if(elBudget){elBudget.placeholder=m?"예: 300,000":"예: 1,000,000";}
+}
+
+function tierOf(n){
+  if(n.indexOf("슈퍼")>=0){return 7;}
+  if(n.indexOf("메가 원팩 16")>=0){return 1;}
+  if(n.indexOf("메가 원팩 12")>=0){return 2;}
+  if(n.indexOf("메가 원팩 8")>=0){return 3;}
+  if(n.indexOf("메가 원팩 4")>=0){return 4;}
+  if(n.indexOf("7일 원팩")>=0){return 5;}
+  return 6;
+}
+
+function ensureCands(){
+  if(candReady){return;}
+  for(var i=0;i<N;i++){
+    var d=DATA[i];
+    if(d&&d[5]>0){
+      cName.push(d[0]);cTier.push(tierOf(d[0]));cPay.push(d[5]);cCon.push(d[2]);cMem.push(d[3]);cCv.push(d[1]);cDesc.push(d[4]);cNote.push(d[7]||"");cKind.push(1);
+    }
+  }
+  for(var p=0;p<PROGS.length;p++){
+    var r=PROGS[p];
+    cName.push(r[0]);cTier.push(tierOf(r[0]));cPay.push(r[2]);cCon.push(r[3]);cMem.push(r[2]);cCv.push(r[4]);cDesc.push(r[5]);cNote.push("");cKind.push(0);
+  }
+  candReady=true;
+}
+
+function prepSingles(){
+  sPrice.length=0;sUnit.length=0;sCv.length=0;sName.length=0;sPop.length=0;sCon.length=0;
+  g=0;
+  for(var i=0;i<SN;i++){
+    var row=SINGLES[i];
+    if(!row){continue;}
+    var p=row[2];
+    if(p>0&&row[1]>0){sPrice.push(p);sCv.push(row[3]);sName.push(row[0]);sPop.push(row[4]?1:0);sCon.push(row[1]);g=gcd(g,p);}
+  }
+  K=sPrice.length;
+  if(K===0||g<=0){useSingles=false;return;}
+  iUnit.length=0;iCv.length=0;iScore.length=0;iBase.length=0;iMul.length=0;
+  for(var k=0;k<K;k++){
+    sUnit[k]=sPrice[k]/g;
+    var w=sPop[k]?POPW:1;
+    for(var m=1;m<=2;m++){
+      iUnit.push(sUnit[k]*m);iCv.push(sCv[k]*m);iScore.push(sCv[k]*m*w);iBase.push(k);iMul.push(m);
+    }
+  }
+  KI=iUnit.length;
+  U=Math.floor(Math.min(budget,CAP)/g);
+  var W=U+1;
+  dpscore=new Int32Array(W).fill(-1);
+  dpreal=new Int32Array(W);
+  dpscore[0]=0;
+  take=new Uint8Array(KI*W);
+  bs=new Int32Array(W);
+  scnt=new Int32Array(K);
+  for(var t=0;t<KI;t++){
+    var u=iUnit[t];
+    var cvv=iCv[t];
+    var sc=iScore[t];
+    var off=t*W;
+    for(var s=U;s>=u;s--){
+      var pv=dpscore[s-u];
+      if(pv>=0){
+        var v=pv+sc;
+        if(v>dpscore[s]){dpscore[s]=v;dpreal[s]=dpreal[s-u]+cvv;take[off+s]=1;}
+      }
+    }
+  }
+  for(var q=1;q<=U;q++){bs[q]=dpscore[q]>=0?q:bs[q-1];}
+}
+
+function fillCalc(left,cv){
+  fRem=left;
+  fCv=cv;
+  if(useSingles){
+    var x=Math.floor(left/g);
+    if(x>U){x=U;}
+    var sv=bs[x];
+    fRem=left-sv*g;
+    fCv=cv+dpreal[sv];
+  }
+}
+
+function addRec(ci,k,rem,cv,left){
+  recC.push(ci);recK.push(k);recRem.push(rem);recCv.push(cv);recLeft.push(left);
+}
+
+function buildRecs(){
+  recC.length=0;recK.length=0;recRem.length=0;recCv.length=0;recLeft.length=0;
+  var nc=cPay.length;
+  for(var t=1;t<=7&&recC.length<REC_MAX;t++){
+    var bi=-1;
+    for(var c=0;c<nc;c++){
+      if(cTier[c]!==t||cPay[c]>budget){continue;}
+      if(bi<0||cCon[c]>cCon[bi]||(cCon[c]===cCon[bi]&&cPay[c]<cPay[bi])){bi=c;}
+    }
+    if(bi<0){continue;}
+    var maxk=Math.min(Math.floor(budget/cPay[bi]),MAXK);
+    var bk=0;
+    var brem=0;
+    var bcv=0;
+    var bleft=0;
+    for(var k=maxk;k>=1;k--){
+      var left=budget-k*cPay[bi];
+      fillCalc(left,cCv[bi]*k);
+      if(bk===0||fRem<brem){bk=k;brem=fRem;bcv=fCv;bleft=left;}
+    }
+    addRec(bi,bk,brem,bcv,bleft);
+  }
+  if(recC.length===0&&useSingles){
+    fillCalc(budget,0);
+    if(fCv>0){addRec(-1,0,fRem,fCv,budget);}
+  }
+}
+
+function buildCard(j){
+  var ci=recC[j];
+  var k=recK[j];
+  var rem=recRem[j];
+  var cv=recCv[j];
+  var total=budget-rem;
+  var conSum=0;
+  var memSum=0;
+  var body="";
+  if(ci>=0){
+    conSum=cCon[ci]*k;
+    memSum=cMem[ci]*k;
+    body+='<li><div class="pn">'+cName[ci]+' × '+k+'</div>'+(cNote[ci]?'<div class="pc">'+cNote[ci]+'</div>':'')+'<div class="pc">'+cDesc[ci]+'</div>';
+    if(cKind[ci]===1&&cMem[ci]>cPay[ci]){
+      body+='<div class="pc">패키지가 적용 · 회원가 합계 대비 '+fmt((cMem[ci]-cPay[ci])*k)+'원 절약</div>';
+    }
+    body+='</li>';
+  }
+  if(useSingles){
+    var x=Math.floor(recLeft[j]/g);
+    if(x>U){x=U;}
+    var sv=bs[x];
+    scnt.fill(0);
+    var W=U+1;
+    for(var t=KI-1;t>=0&&sv>0;t--){
+      if(take[t*W+sv]===1){
+        scnt[iBase[t]]+=iMul[t];
+        sv-=iUnit[t];
+      }
+    }
+    var sb="";
+    for(var m=0;m<K;m++){
+      if(scnt[m]>0){
+        conSum+=sCon[m]*scnt[m];
+        memSum+=sPrice[m]*scnt[m];
+        sb+='<li><div class="pn">'+sName[m]+(sPop[m]?'<span class="bd">인기</span>':'')+' × '+scnt[m]+'</div></li>';
+      }
+    }
+    if(sb!==""){body+='<li class="sgh">단품 추가</li>'+sb;}
+  }
+  var extra='<div class="pc" style="margin-top:8px">마진 = 소비자가 − 회원가 합계 ('+fmt(memSum)+'원)</div>';
+  if(isMonthly&&months>0){extra+='<div class="pc">월 평균 '+fmt(Math.round(total/months))+'원 · '+months+'개월</div>';}
+  var title='추천 '+(j+1)+(ci>=0?'':' · 단품 구성');
+  return '<div class="res'+(j===0?' top':'')+'"><div class="rh"><span class="rk">'+title+'</span><span class="rem'+(rem===0?' zero':'')+'">남은 금액 : '+fmt(rem)+'원</span></div><ul class="pk">'+body+'</ul><div class="sum"><span>합계 <b>'+fmt(total)+'원</b></span><span>총 CV <b>'+fmt(cv)+'</b></span><span>소비자가로는 <b>'+fmt(conSum)+'원</b></span><span>마진 <b>'+fmt(conSum-memSum)+'원</b></span></div>'+extra+'</div>';
+}
+
+function showMsg(t){
+  if(elInfo){elInfo.textContent="";}
+  if(elOut){elOut.innerHTML='<div class="empty">'+t+'</div>';}
+}
+
+function calc(){
+  if(!elBudget||!elOut||!elInfo){return;}
+  syncIm();
+  isMonthly=getIm()==="m";
+  var raw=elBudget.value?elBudget.value.replace(/[^0-9]/g,""):"";
+  var val=raw===""?0:parseInt(raw,10);
+  if(isMonthly){
+    monthly=val;
+    months=elMonths?parseInt(elMonths.value,10):0;
+    if(!monthly||monthly<=0){showMsg("월 금액을 입력해 주세요.");return;}
+    if(!months||months<1){showMsg("개월 수를 입력해 주세요.");return;}
+    if(months>60){months=60;}
+    budget=monthly*months;
+  }else{
+    monthly=0;
+    months=0;
+    budget=val;
+    if(!budget||budget<=0){showMsg("예산을 입력해 주세요.");return;}
+  }
+  ensureCands();
+  useSingles=true;
+  prepSingles();
+  buildRecs();
+  elInfo.textContent=isMonthly?"월 "+fmt(monthly)+"원 × "+months+"개월 = 총 "+fmt(budget)+"원 · 회원가 기준":"회원가 기준";
+  if(recC.length===0){
+    elOut.innerHTML='<div class="empty">추천 가능한 구성이 없습니다. 남은 금액 : '+fmt(budget)+'원</div>';
+    return;
+  }
+  var html="";
+  for(var j=0;j<recC.length;j++){html+=buildCard(j);}
+  elOut.innerHTML=html;
+}
+
+if(elBudget){
+  elBudget.addEventListener("input",function(){
+    var d=elBudget.value.replace(/[^0-9]/g,"");
+    elBudget.value=d===""?"":fmt(parseInt(d,10));
+  });
+  elBudget.addEventListener("keydown",function(e){
+    if(e.key==="Enter"){calc();}
+  });
+}
+if(elMonths){
+  elMonths.addEventListener("keydown",function(e){
+    if(e.key==="Enter"){calc();}
+  });
+  elMonths.addEventListener("change",function(){if(elBudget&&elBudget.value){calc();}});
+}
+if(elGo){elGo.addEventListener("click",calc);}
+function recalc(){syncIm();if(elBudget&&elBudget.value){calc();}}
+for(var im=0;im<elIm.length;im++){
+  elIm[im].addEventListener("change",recalc);
+}
+
+var views={calc:document.getElementById("v-calc"),prod:document.getElementById("v-prod"),pkg:document.getElementById("v-pkg"),ez:document.getElementById("v-ez"),mg:document.getElementById("v-mg")};
+var tabBtns=document.querySelectorAll?document.querySelectorAll(".tab"):[];
+var elProd=document.getElementById("prodBody");
+var elPkg=document.getElementById("pkgBody");
+var elQ=document.getElementById("q");
+
+function dash(n){return n>0?fmt(n):"-";}
+
+function showTab(n){
+  for(var key in views){
+    if(views[key]){views[key].hidden=(key!==n);}
+  }
+  for(var i=0;i<tabBtns.length;i++){
+    var on=tabBtns[i].getAttribute("data-t")===n;
+    if(on){tabBtns[i].classList.add("on");}else{tabBtns[i].classList.remove("on");}
+  }
+}
+
+var sortMode="pop";
+var elSort=document.getElementById("sortSel");
+var prodIdx=[];
+for(var pi=0;pi<SN;pi++){prodIdx.push(pi);}
+
+function prodPrice(r){return r[2]>0?r[2]:r[1];}
+
+function prodVal(r){
+  var p=prodPrice(r);
+  return (r[3]>0&&p>0)?p/r[3]:1000000000;
+}
+
+function prodCmp(a,b){
+  var x=SINGLES[a];
+  var y=SINGLES[b];
+  var d=0;
+  if(sortMode==="cv"){d=y[3]-x[3];}
+  else if(sortMode==="cvl"){d=x[3]-y[3];}
+  else if(sortMode==="pl"){d=prodPrice(x)-prodPrice(y);}
+  else if(sortMode==="ph"){d=prodPrice(y)-prodPrice(x);}
+  else if(sortMode==="name"){d=x[0].localeCompare(y[0],"ko");}
+  else if(sortMode==="val"){d=prodVal(x)-prodVal(y);}
+  else{d=(y[4]?1:0)-(x[4]?1:0);}
+  return d!==0?d:a-b;
+}
+
+function buildProd(filter){
+  if(!elProd){return;}
+  var f=filter?filter.replace(/\s+/g,"").toLowerCase():"";
+  var h="";
+  prodIdx.sort(prodCmp);
+  for(var k=0;k<prodIdx.length;k++){
+    var r=SINGLES[prodIdx[k]];
+    if(!r){continue;}
+    if(f!==""&&r[0].replace(/\s+/g,"").toLowerCase().indexOf(f)<0){continue;}
+    var nm=r[0]+(r[4]?'<span class="bd">인기</span>':'');
+    if(r[1]===0&&r[2]===0){
+      h+='<tr><td>'+nm+'</td><td colspan="3" class="mut">가격·CV 입력 필요</td></tr>';
+    }else{
+      if(sortMode==="val"){nm+='<div class="pc">CV당 약 '+fmt(Math.round(prodVal(r)))+'원 (회원가)</div>';}
+      h+='<tr><td>'+nm+'</td><td class="n">'+dash(r[1])+'</td><td class="n">'+dash(r[2])+'</td><td class="n">'+r[3]+'</td></tr>';
+    }
+  }
+  elProd.innerHTML=h===""?'<tr><td colspan="4" class="mut">검색 결과가 없습니다.</td></tr>':h;
+}
+
+function pkgCard(i){
+  var r=DATA[i];
+  var has=r[5]>0;
+  var h='<div class="res"><div class="rh"><span class="pn">'+r[0]+'</span><span class="rk">CV '+fmt(r[1])+'</span></div>';
+  if(r[7]){h+='<div class="pc">'+r[7]+'</div>';}
+  h+='<div class="pc">'+r[4]+'</div><div class="grid"><div>소비자가<b>'+fmt(r[2])+'</b></div><div>회원가<b>'+fmt(r[3])+'</b></div><div>패키지가<b>'+(has?fmt(r[5]):"-")+'</b></div><div>할인율<b>'+(has?r[6]:"-")+'</b></div></div></div>';
+  return h;
+}
+
+function buildPkg(){
+  if(!elPkg){return;}
+  var a="";
+  for(var i=0;i<N;i++){
+    if(DATA[i][5]>0){a+=pkgCard(i);}
+  }
+  elPkg.innerHTML=a;
+}
+
+for(var tb=0;tb<tabBtns.length;tb++){
+  tabBtns[tb].addEventListener("click",function(){showTab(this.getAttribute("data-t"));});
+}
+if(elQ){elQ.addEventListener("input",function(){buildProd(elQ.value);});}
+if(elSort){elSort.addEventListener("change",function(){sortMode=elSort.value;buildProd(elQ?elQ.value:"");});}
+buildProd("");
+buildPkg();
+
+var ezQty=new Int32Array(SN);
+var ezOrder=[];
+var ezFilter="";
+var elEzBody=document.getElementById("ezBody");
+var elEzSum=document.getElementById("ezSum");
+var elEzQ=document.getElementById("ezq");
+var elEzReset=document.getElementById("ezReset");
+
+for(var ep=0;ep<2;ep++){
+  for(var ei=0;ei<SN;ei++){
+    var er=SINGLES[ei];
+    if(er&&er[2]>0&&((er[4]?1:0)===(ep===0?1:0))){ezOrder.push(ei);}
+  }
+}
+
+function ezPrice(i,rate){return Math.round(SINGLES[i][2]*(1-rate)/10)*10;}
+function ezNum(x){return (Math.round(x*10)/10).toString();}
+
+function ezRender(){
+  if(!elEzBody||!elEzSum){return;}
+  var sumM=0;
+  var sumCv=0;
+  var cnt=0;
+  for(var i=0;i<SN;i++){
+    var q=ezQty[i];
+    if(q>0){sumM+=SINGLES[i][2]*q;sumCv+=SINGLES[i][3]*q;cnt+=q;}
+  }
+  var rate=0.1;
+  var pay=0;
+  for(var j=0;j<SN;j++){
+    if(ezQty[j]>0){pay+=ezPrice(j,rate)*ezQty[j];}
+  }
+  elEzSum.innerHTML='<div class="ezg"><div>선택 수량<b>'+cnt+'개</b></div><div>이지원 금액<b>'+fmt(pay)+'원</b></div><div>이지원 CV<b>'+ezNum(sumCv*(1-rate))+'</b></div></div>';
+  var f=ezFilter?ezFilter.replace(/\s+/g,"").toLowerCase():"";
+  var h="";
+  for(var k=0;k<ezOrder.length;k++){
+    var idx=ezOrder[k];
+    var r=SINGLES[idx];
+    if(f!==""&&r[0].replace(/\s+/g,"").toLowerCase().indexOf(f)<0){continue;}
+    h+='<tr'+(ezQty[idx]>0?' class="sel"':'')+'><td>'+r[0]+(r[4]?'<span class="bd">인기</span>':'')+(ezQty[idx]>0?'<span class="qb">×'+ezQty[idx]+'</span>':'')+'</td><td class="n">'+fmt(ezPrice(idx,rate))+'</td><td class="n">'+ezNum(r[3]*(1-rate))+'</td><td class="n"><button type="button" class="st" data-a="m" data-i="'+idx+'" aria-label="수량 줄이기">−</button><span class="qn">'+ezQty[idx]+'</span><button type="button" class="st" data-a="p" data-i="'+idx+'" aria-label="수량 늘리기">+</button></td></tr>';
+  }
+  elEzBody.innerHTML=h===""?'<tr><td colspan="4" class="mut">검색 결과가 없습니다.</td></tr>':h;
+}
+
+if(elEzBody){
+  elEzBody.addEventListener("click",function(e){
+    var t=e?e.target:null;
+    if(!t||!t.getAttribute){return;}
+    var a=t.getAttribute("data-a");
+    var ix=parseInt(t.getAttribute("data-i"),10);
+    if(!a||isNaN(ix)||ix<0||ix>=SN){return;}
+    if(a==="p"&&ezQty[ix]<99){ezQty[ix]++;}
+    if(a==="m"&&ezQty[ix]>0){ezQty[ix]--;}
+    ezRender();
+  });
+}
+if(elEzQ){elEzQ.addEventListener("input",function(){ezFilter=elEzQ.value;ezRender();});}
+if(elEzReset){elEzReset.addEventListener("click",function(){ezQty.fill(0);ezRender();});}
+ezRender();
+
+var PROGS=[
+["워밍업 (7일 원팩 1세트)","워밍업",283800,405420,159,"프로알지 1, 시너비트 1, 프로가드 1, 비프라임 1"],
+["메가 원팩 4주 (플레인·크런치)","체질 개선 프로그램",1055500,1507840,590,"프로알지 2, 시너비트 1, 프로가드 2, 비프라임 2, 바이타팩 1, 컨트롤 1, 트루그린(라임) 2, 쉐이크 4 (플레인 또는 크런치)"],
+["메가 원팩 4주 (맥시멈)","체질 개선 프로그램",997500,1423280,554,"프로알지 2, 시너비트 1, 프로가드 2, 비프라임 2, 바이타팩 1, 컨트롤 1, 트루그린(라임) 2, 맥시멈 4, 지퍼백 4"],
+["메가 원팩 8주 (플레인·크런치)","체질 개선 프로그램",2111000,3015680,1180,"프로알지 4, 시너비트 2, 프로가드 4, 비프라임 4, 바이타팩 2, 컨트롤 2, 트루그린(라임) 4, 쉐이크 8 (플레인 또는 크런치)"],
+["메가 원팩 8주 (맥시멈)","체질 개선 프로그램",1995000,2846560,1108,"프로알지 4, 시너비트 2, 프로가드 4, 비프라임 4, 바이타팩 2, 컨트롤 2, 트루그린(라임) 4, 맥시멈 8, 지퍼백 8"],
+["메가 원팩 12주 (플레인·크런치)","체질 개선 프로그램",3166500,4523520,1770,"프로알지 6, 시너비트 3, 프로가드 6, 비프라임 6, 바이타팩 3, 컨트롤 3, 트루그린(라임) 6, 쉐이크 12 (플레인 또는 크런치)"],
+["메가 원팩 12주 (맥시멈)","체질 개선 프로그램",2992500,4269840,1662,"프로알지 6, 시너비트 3, 프로가드 6, 비프라임 6, 바이타팩 3, 컨트롤 3, 트루그린(라임) 6, 맥시멈 12, 지퍼백 12"],
+["메가 원팩 16주 (플레인·크런치)","체질 개선 프로그램",4222000,6031360,2360,"프로알지 8, 시너비트 4, 프로가드 8, 비프라임 8, 바이타팩 4, 컨트롤 4, 트루그린(라임) 8, 쉐이크 16 (플레인 또는 크런치)"],
+["메가 원팩 16주 (맥시멈)","체질 개선 프로그램",3990000,5693120,2216,"프로알지 8, 시너비트 4, 프로가드 8, 비프라임 8, 바이타팩 4, 컨트롤 4, 트루그린(라임) 8, 맥시멈 16, 지퍼백 16"]
+];
+var PN=PROGS.length;
+var elMgOut=document.getElementById("mgOut");
+var MG_GROUPS=["워밍업","체질 개선 프로그램"];
+var MG_DESC=["7일 원팩 1세트","메가 원팩 4·8·12·16주"];
+
+function mgCard(idx){
+  var p=PROGS[idx];
+  var h='<div class="res"><div class="pn">'+p[0]+'</div><div class="pc">'+p[5]+'</div>';
+  h+='<div class="sum"><span>회원가 <b>'+fmt(p[2])+'원</b></span><span>소비자가 <b>'+fmt(p[3])+'원</b></span><span>CV <b>'+fmt(p[4])+'</b></span></div>';
+  h+='<div class="pc" style="margin-top:8px">마진 (소비자가 − 회원가) '+fmt(p[3]-p[2])+'원</div></div>';
+  return h;
+}
+
+function mgBuild(){
+  if(!elMgOut){return;}
+  var h="";
+  for(var g2=0;g2<MG_GROUPS.length;g2++){
+    h+='<div class="gt">'+MG_GROUPS[g2]+'</div><div class="pc" style="margin:0 2px 8px">'+MG_DESC[g2]+'</div>';
+    for(var j=0;j<PN;j++){
+      if(PROGS[j][1]===MG_GROUPS[g2]){h+=mgCard(j);}
+    }
+  }
+  elMgOut.innerHTML=h;
+}
+mgBuild();
+</script>
+</body>
+</html>
