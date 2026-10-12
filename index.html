@@ -91,7 +91,7 @@ h1{font-size:1.5rem;margin:6px 0 2px;letter-spacing:-.02em}
 </nav>
 
 <section id="v-calc">
-<p class="intro">예산을 입력하면 메가 원팩 16주부터 순서대로 구성을 추천합니다.</p>
+<p class="intro">예산을 입력하면 메가 원팩 16주부터 순서대로, 목표 CV를 입력하면 CV에 맞는 구성을 추천합니다.</p>
 <div class="panel">
 <label class="lb" for="budget" id="lblBudget">예산 (원)</label>
 <div class="inrow">
@@ -103,6 +103,8 @@ h1{font-size:1.5rem;margin:6px 0 2px;letter-spacing:-.02em}
 <div class="opts">
 <label class="opt"><input type="radio" name="im" value="t" checked>총 금액</label>
 <label class="opt"><input type="radio" name="im" value="m">월 금액 × 개월</label>
+<label class="opt"><input type="radio" name="im" value="c">목표 CV</label>
+<label class="opt"><input type="checkbox" id="skin">스킨케어 위주</label>
 </div>
 </div>
 <div id="info" class="info"></div>
@@ -121,7 +123,6 @@ h1{font-size:1.5rem;margin:6px 0 2px;letter-spacing:-.02em}
 <option value="pl">가격 낮은순</option>
 <option value="ph">가격 높은순</option>
 <option value="name">이름순</option>
-<option value="val">가성비순 (CV당 가격)</option>
 </select></div>
 </div>
 </div>
@@ -129,7 +130,7 @@ h1{font-size:1.5rem;margin:6px 0 2px;letter-spacing:-.02em}
 </section>
 
 <section id="v-pkg" hidden>
-<p class="intro">공식 패키지의 구성과 가격입니다.</p>
+<p class="intro">공식 패키지의 구성과 가격입니다. 맨 아래에 오토십 전용 패키지가 있습니다.</p>
 <div id="pkgList"></div>
 </section>
 
@@ -150,7 +151,6 @@ h1{font-size:1.5rem;margin:6px 0 2px;letter-spacing:-.02em}
 <option value="pl">가격 낮은순</option>
 <option value="ph">가격 높은순</option>
 <option value="name">이름순</option>
-<option value="val">가성비순 (CV당 가격)</option>
 </select></div>
 </div>
 </div>
@@ -218,10 +218,10 @@ var SINGLES=[
 ["파워메토 플러스",111000,77700,44,0],
 ["프로바이오틱스 플러스",72000,50400,27,0],
 ["프로알지-9 플러스 프로가드",105430,73800,41,1],
-["프로알지-9플러스",148570,104000,59,1],
-["프로알지-9플러스 5패킷",0,18900,10,0],
+["프로알지-9 플러스",148570,104000,59,1],
+["프로알지-9 플러스 5패킷",0,18900,10,0],
 ["프로알지-9 플러스 액티브 혼합비타민",148570,104000,59,0],
-["프로알지-9플러스 퍼플웨이브 멀티비타민",148570,104000,59,0],
+["프로알지-9 플러스 퍼플웨이브 멀티비타민",148570,104000,59,0],
 ["후라보-씨 멀티비타민 & 아연",19290,13500,8,0],
 ["라마라 래디언스 오일",57000,39900,22,0],
 ["라마라 데일리 너리싱 클렌저",45000,31500,17,0],
@@ -271,6 +271,12 @@ var elGo=document.getElementById("go");
 var elInfo=document.getElementById("info");
 var elOut=document.getElementById("out");
 var elIm=document.getElementsByName("im");
+var elSkin=document.getElementById("skin");
+var skinOn=false;
+
+function isSkin(n){return n.indexOf("라마라")===0;}
+
+function dorder(n){return (skinOn&&isSkin(n))?-1:corder(n);}
 var candReady=false;
 var cName=[];
 var cTier=[];
@@ -336,11 +342,12 @@ function getIm(){
 }
 
 function syncIm(){
-  var m=getIm()==="m";
+  var md=getIm();
+  var m=md==="m";
   if(elMonths){elMonths.hidden=!m;}
   if(elSuf){elSuf.hidden=!m;}
-  if(elLbl){elLbl.textContent=m?"월 금액 (원) × 개월":"예산 (원)";}
-  if(elBudget){elBudget.placeholder=m?"예: 300,000":"예: 1,000,000";}
+  if(elLbl){elLbl.textContent=m?"월 금액 (원) × 개월":(md==="c"?"목표 CV":"예산 (원)");}
+  if(elBudget){elBudget.placeholder=m?"예: 300,000":(md==="c"?"예: 200":"예: 1,000,000");}
 }
 
 function tierOf(n){
@@ -385,7 +392,7 @@ function prepSingles(){
     for(var k=0;k<K;k++){
       var isF=sName[k].indexOf("시너후레쉬")===0;
       if((pass===0)===isF){continue;}
-      var w=isF?0:(sPop[k]?POPW:1);
+      var w=isF?0:(skinOn?(isSkin(sName[k])?(sName[k].indexOf("PDRN")>=0?14:12):1):(corder(sName[k])===0?10:(corder(sName[k])===1?7:(corder(sName[k])===2?6:(sPop[k]?POPW:1)))));
       for(var m=1;m<=2;m++){
         iUnit.push(sUnit[k]*m);iCv.push(sCv[k]*m);iScore.push(sCv[k]*m*w);iBase.push(k);iMul.push(m);
       }
@@ -418,11 +425,25 @@ function prepSingles(){
     }
   }
   if(tProd>=KI){snapProd();}
-  for(var q=1;q<=U;q++){bs[q]=dpscore[q]>=0?q:bs[q-1];}
+  pickBest(bs);
+}
+
+var TOL=5000;
+
+function pickBest(dst){
+  var win=Math.max(1,Math.floor(TOL/g));
+  for(var q=1;q<=U;q++){
+    var bq=0;
+    var bsc=-1;
+    for(var r=q;r>=0&&r>=q-win;r--){
+      if(dpscore[r]>bsc){bsc=dpscore[r];bq=r;}
+    }
+    dst[q]=bq;
+  }
 }
 
 function snapProd(){
-  for(var q=1;q<=U;q++){bs0[q]=dpscore[q]>=0?q:bs0[q-1];}
+  pickBest(bs0);
   dpreal0.set(dpreal);
 }
 
@@ -454,7 +475,7 @@ function addRec(ci,k,rem,cv,left,mode){
 function buildRecs(){
   recC.length=0;recK.length=0;recRem.length=0;recCv.length=0;recLeft.length=0;recMode.length=0;
   var nc=cPay.length;
-  for(var t=1;t<=7&&recC.length<REC_MAX;t++){
+  for(var t=1;t<=7&&recC.length<REC_MAX&&!skinOn;t++){
     var bi=-1;
     for(var c=0;c<nc;c++){
       if(cTier[c]!==t||cPay[c]>budget){continue;}
@@ -485,6 +506,7 @@ function buildCard(j){
   var scv=recCv[j];
   var left=recLeft[j];
   var sTot=0;
+  var conS=0;
   var sb="";
   if(useSingles){
     var x=Math.floor(left/g);
@@ -499,20 +521,27 @@ function buildCard(j){
         sv-=iUnit[t];
       }
     }
-    for(var m=0;m<K;m++){
+    var mord=[];
+    for(var m0=0;m0<K;m0++){mord.push(m0);}
+    mord.sort(function(a,b){var d=dorder(sName[a])-dorder(sName[b]);return d!==0?d:a-b;});
+    for(var mi=0;mi<K;mi++){
+      var m=mord[mi];
       if(scnt[m]>0){
         sTot+=sPrice[m]*scnt[m];
+        conS+=sCon[m]*scnt[m];
         sb+='<div class="sr"><div><div class="sn">'+sName[m]+' × '+scnt[m]+(sPop[m]?'<span class="chip">인기</span>':'')+'</div><div class="su">단품 1개 '+won(sPrice[m])+'</div></div><div class="sa">'+won(sPrice[m]*scnt[m])+'</div></div>';
       }
     }
   }
   var hasPkg=ci>=0;
   var total=sTot;
+  var conTot=conS;
   var cvT=scv;
   var margin=rem;
   var h='<div class="card'+(j===0?' top':'')+'"><div class="ch"><div class="ct">'+(hasPkg?cName[ci]+' × '+k:'단품 구성')+'</div><div class="cr"><span class="chip solid">추천 '+(j+1)+'</span></div></div>';
   if(hasPkg){
     total=cPay[ci]*k;
+    conTot=cCon[ci]*k;
     cvT=cCv[ci]*k;
     margin=left;
     if(cNote[ci]){h+='<div class="cd">'+cNote[ci]+'</div>';}
@@ -522,10 +551,11 @@ function buildCard(j){
     }
   }
   h+=mts(3,mt('합계',won(total))+mt('총 CV',fmt(cvT))+mt('마진',won(margin),1));
+  h+='<div class="mo">소비자가로는 약 '+won(conTot)+'</div>';
   if(isMonthly&&months>0){h+='<div class="mo">월 평균 '+won(Math.round(total/months))+' · '+months+'개월</div>';}
   if(sb!==""){
     h+='<div class="sg"><div class="sgt">'+(hasPkg?'단품 추가 · 남은 금액 '+won(left):'단품 구성')+'</div>'+sb;
-    if(hasPkg){h+='<div class="sf">단품 합계 '+won(sTot)+' · CV +'+fmt(scv)+' · 단품 추가 시 마진 '+won(rem)+'</div>';}
+    if(hasPkg){h+='<div class="sf">단품 합계 '+won(sTot)+' (소비자가 약 '+won(conS)+') · CV +'+fmt(scv)+' · 단품 추가 시 마진 '+won(rem)+'</div>';}
     h+='</div>';
   }
   return h+'</div>';
@@ -536,12 +566,238 @@ function showMsg(t){
   if(elOut){elOut.innerHTML='<div class="empty">'+t+'</div>';}
 }
 
+var cvQty=new Int32Array(SN);
+var cvIU=[];
+var cvIV=[];
+var cvIB=[];
+var cvIM=[];
+
+function corder(n){
+  if(n==="프로알지-9 플러스"){return 0;}
+  if(n==="프로알지-9 플러스 프로가드"){return 1;}
+  if(n==="시너비트"){return 2;}
+  return 3;
+}
+
+function isCore(n){return n==="프로알지-9 플러스"||n==="프로알지-9 플러스 프로가드"||n==="시너비트";}
+
+var cvLR=1;
+function cvLo(t){return Math.ceil(t*cvLR);}
+function cvHi(t){return Math.floor(t*1.2);}
+function cvDiff(d){return d>0?'+'+fmt(d):(d<0?'-'+fmt(-d):'');}
+
+function cvCore(target){
+  var kk=Math.floor(target/140);
+  var rem=target-140*kk;
+  var x=0;
+  if(rem>0){
+    var lo=Math.max(1,cvLo(target)-140*kk);
+    var hi=Math.max(lo,cvHi(target)-140*kk);
+    x=cvSolve(rem,0,lo,hi);
+    if(x<0){return -1;}
+  }else{
+    cvQty.fill(0);
+  }
+  if(kk>0){
+    for(var i=0;i<SN;i++){
+      if(isCore(SINGLES[i][0])){cvQty[i]+=kk;}
+    }
+  }
+  return x+140*kk;
+}
+
+function cvSolve(target,mode,lo,hi){
+  if(lo===undefined){lo=cvLo(target);hi=cvHi(target);}
+  var UM=hi;
+  var W=UM+1;
+  var INF=2000000000;
+  cvIU.length=0;cvIV.length=0;cvIB.length=0;cvIM.length=0;
+  for(var i=0;i<SN;i++){
+    var r=SINGLES[i];
+    if(!r||r[2]<=0||r[3]<=0||r[0].indexOf("시너후레쉬")===0){continue;}
+    for(var m=1;m<=2;m++){
+      cvIU.push(r[3]*m);
+      cvIV.push(mode===1?r[2]*m:r[3]*m*(skinOn?(isSkin(r[0])?12:1):(isCore(r[0])?(corder(r[0])===0?6:(corder(r[0])===1?5:4)):(r[4]?POPW:1))));
+      cvIB.push(i);cvIM.push(m);
+    }
+  }
+  var KI2=cvIU.length;
+  var dp=new Int32Array(W).fill(mode===1?INF:-1);
+  dp[0]=0;
+  var tk=new Uint8Array(KI2*W);
+  for(var t=0;t<KI2;t++){
+    var u=cvIU[t];
+    var v0=cvIV[t];
+    var off=t*W;
+    for(var s=UM;s>=u;s--){
+      var pv=dp[s-u];
+      if(mode===1){
+        if(pv<INF&&pv+v0<dp[s]){dp[s]=pv+v0;tk[off+s]=1;}
+      }else{
+        if(pv>=0&&pv+v0>dp[s]){dp[s]=pv+v0;tk[off+s]=1;}
+      }
+    }
+  }
+  var found=-1;
+  var fs0=-INF;
+  var bp=INF;
+  for(var x=lo;x<=UM;x++){
+    if(mode===1){
+      if(dp[x]<INF&&(dp[x]<bp||(dp[x]===bp&&Math.abs(x-target)<Math.abs(found-target)))){bp=dp[x];found=x;}
+    }else if(dp[x]>=0){
+      var sc=dp[x]-Math.abs(x-target)*8;
+      if(sc>fs0){fs0=sc;found=x;}
+    }
+  }
+  if(found<=0){return -1;}
+  cvQty.fill(0);
+  var cur=found;
+  for(var q=KI2-1;q>=0&&cur>0;q--){
+    if(tk[q*W+cur]===1){cvQty[cvIB[q]]+=cvIM[q];cur-=cvIU[q];}
+  }
+  return found;
+}
+
+function cvSingles(rank,title,x,target){
+  var rows="";
+  var pay=0;
+  var ord=[];
+  for(var o0=0;o0<SN;o0++){ord.push(o0);}
+  ord.sort(function(a,b){var d=dorder(SINGLES[a][0])-dorder(SINGLES[b][0]);return d!==0?d:a-b;});
+  for(var oi=0;oi<SN;oi++){
+    var i=ord[oi];
+    var q=cvQty[i];
+    if(q>0){
+      var r=SINGLES[i];
+      pay+=r[2]*q;
+      rows+='<div class="sr"><div><div class="sn">'+r[0]+' × '+q+(r[4]?'<span class="chip">인기</span>':'')+'</div><div class="su">단품 1개 '+won(r[2])+'</div></div><div class="sa">'+won(r[2]*q)+'</div></div>';
+    }
+  }
+  var h='<div class="card'+(rank===1?' top':'')+'"><div class="ch"><div class="ct">'+title+'</div><div class="cr"><span class="chip solid">추천 '+rank+'</span></div></div>';
+  if(x!==target){h+='<div class="cd">목표 CV보다 '+cvDiff(x-target)+'</div>';}
+  h+=mts(2,mt('합계',won(pay))+mt('총 CV',fmt(x),1))+'<div class="sg">'+rows+'</div></div>';
+  return h;
+}
+
+function cvPkg(rank,target){
+  ensureCands();
+  var bi=-1;
+  var bk=0;
+  var bpay=0;
+  var bcv=0;
+  for(var c=0;c<cPay.length;c++){
+    if(cCv[c]<=0){continue;}
+    for(var kt=0;kt<2;kt++){
+      var k=kt===0?Math.floor(target/cCv[c]):Math.ceil(target/cCv[c]);
+      if(k<1||k>MAXK){continue;}
+      var pay=k*cPay[c];
+      var cv=k*cCv[c];
+      if(cv<cvLo(target)||cv>cvHi(target)){continue;}
+      if(bi<0||pay<bpay||(pay===bpay&&cv>bcv)){bi=c;bk=k;bpay=pay;bcv=cv;}
+    }
+  }
+  if(bi<0){return "";}
+  var h='<div class="card'+(rank===1?' top':'')+'"><div class="ch"><div class="ct">'+cName[bi]+' × '+bk+'</div><div class="cr"><span class="chip solid">추천 '+rank+'</span></div></div>';
+  if(cNote[bi]){h+='<div class="cd">'+cNote[bi]+'</div>';}
+  h+='<div class="cd">'+cDesc[bi]+'</div>';
+  if(cKind[bi]===1&&cMem[bi]>cPay[bi]){h+='<div class="note">패키지가 적용 · 회원가 합계 대비 '+won((cMem[bi]-cPay[bi])*bk)+' 절약</div>';}
+  if(bcv!==target){h+='<div class="cd">목표 CV보다 '+cvDiff(bcv-target)+'</div>';}
+  h+=mts(2,mt('합계',won(bpay))+mt('총 CV',fmt(bcv),1));
+  return h+'</div>';
+}
+
+var AUTO_OVER=60;
+var adp=null;
+var apar=null;
+var apr=null;
+var aBest=-1;
+
+function autoSolve(target){
+  var NA=AUTO.length;
+  var UM=cvHi(target);
+  var LO=Math.ceil(target*0.8);
+  var INF=1e18;
+  adp=new Float64Array(UM+1).fill(INF);
+  apar=new Int16Array(UM+1).fill(-1);
+  apr=new Int32Array(UM+1);
+  adp[0]=0;
+  for(var c=1;c<=UM;c++){
+    for(var i=0;i<NA;i++){
+      if(skinOn&&AUTO[i][0].indexOf("라마라")<0){continue;}
+      var u=AUTO[i][1];
+      if(u>c||adp[c-u]>=INF){continue;}
+      var cost=adp[c-u]+AUTO[i][3]-(AUTO[i][0].indexOf("원팩")>=0?5000*u:0);
+      if(cost<adp[c]){adp[c]=cost;apar[c]=i;apr[c]=apr[c-u]+AUTO[i][3];}
+    }
+  }
+  aBest=-1;
+  var bs=INF;
+  for(var x=LO;x<=UM;x++){
+    if(adp[x]>=INF||x<=0){continue;}
+    var sc=adp[x]+Math.abs(x-target)*5000+(x<target?(target-x)*3000:0);
+    if(sc<bs){bs=sc;aBest=x;}
+  }
+}
+
+function cvAuto(rank,target){
+  var NA=AUTO.length;
+  autoSolve(target);
+  var par=apar;
+  var best=aBest;
+  if(best<0){return "";}
+  var cnt=new Int32Array(NA);
+  var cur=best;
+  while(cur>0&&par[cur]>=0){cnt[par[cur]]++;cur-=AUTO[par[cur]][1];}
+  var rows="";
+  for(var j=0;j<NA;j++){
+    if(cnt[j]>0){
+      rows+='<div class="sr"><div><div class="sn">'+AUTO[j][0]+' × '+cnt[j]+'</div><div class="su">'+AUTO[j][2]+'</div></div><div class="sa">'+won(AUTO[j][3]*cnt[j])+'</div></div>';
+    }
+  }
+  var h='<div class="card"><div class="ch"><div class="ct">오토십 전용 구성</div><div class="cr"><span class="chip solid">추천 '+rank+'</span><span class="chip">오토십 전용</span></div></div>';
+  if(best!==target){h+='<div class="cd">목표 CV보다 '+cvDiff(best-target)+'</div>';}
+  h+=mts(2,mt('오토십 패키지가 합계',won(apr[best]),1)+mt('총 CV',fmt(best),1))+'<div class="sg">'+rows+'</div></div>';
+  return h;
+}
+
+function calcCv(target){
+  if(!target||target<=0){showMsg("목표 CV를 입력해 주세요.");return;}
+  if(target>20000){target=20000;}
+  var h="";
+  var n=0;
+  if(skinOn){
+    cvLR=1;
+    var xs=cvSolve(target,0);
+    if(xs<=0){cvLR=0.8;xs=cvSolve(target,0);cvLR=1;}
+    if(xs>0){n++;h+=cvSingles(n,'단품 구성',xs,target);}
+    var aus=cvAuto(n+1,target);
+    if(aus!==""){n++;h+=aus;}
+  }else{
+    cvLR=1;
+    var x0=cvCore(target);
+    if(x0<=0){cvLR=0.8;x0=cvCore(target);cvLR=1;}
+    if(x0>0){n++;h+=cvSingles(n,'단품 구성',x0,target);}
+    var x1=cvSolve(target,1);
+    if(x1<=0){cvLR=0.8;x1=cvSolve(target,1);cvLR=1;}
+    if(x1>0){n++;h+=cvSingles(n,'단품 구성 · 최저 금액',x1,target);}
+    var p=cvPkg(n+1,target);
+    if(p===""){cvLR=0.8;p=cvPkg(n+1,target);cvLR=1;}
+    if(p!==""){n++;h+=p;}
+    var au=cvAuto(n+1,target);
+    if(au!==""){n++;h+=au;}
+  }
+  elInfo.textContent="목표 CV "+fmt(target)+" 이상 우선 (최대 "+fmt(cvHi(target))+", 맞는 구성이 없으면 "+fmt(Math.ceil(target*0.8))+"까지) · 회원가 기준 (이지원 할인 미적용)"+(skinOn?" · 스킨케어 위주":"");
+  elOut.innerHTML=h===""?'<div class="empty">추천 가능한 구성이 없습니다.</div>':h;
+}
+
 function calc(){
   if(!elBudget||!elOut||!elInfo){return;}
   syncIm();
+  skinOn=elSkin?elSkin.checked:false;
   isMonthly=getIm()==="m";
   var raw=elBudget.value?elBudget.value.replace(/[^0-9]/g,""):"";
   var val=raw===""?0:parseInt(raw,10);
+  if(getIm()==="c"){isMonthly=false;calcCv(val);return;}
   if(isMonthly){
     monthly=val;
     months=elMonths?parseInt(elMonths.value,10):0;
@@ -559,7 +815,7 @@ function calc(){
   useSingles=true;
   prepSingles();
   buildRecs();
-  elInfo.textContent=isMonthly?"월 "+fmt(monthly)+"원 × "+months+"개월 = 총 "+fmt(budget)+"원 · 회원가 기준":"회원가 기준";
+  elInfo.textContent=(isMonthly?"월 "+fmt(monthly)+"원 × "+months+"개월 = 총 "+fmt(budget)+"원 · 회원가 기준":"회원가 기준")+(skinOn?" · 스킨케어 위주":"");
   if(recC.length===0){
     elOut.innerHTML='<div class="empty">추천 가능한 구성이 없습니다. 남은 금액 : '+fmt(budget)+'원</div>';
     return;
@@ -586,6 +842,7 @@ if(elMonths){
 }
 if(elGo){elGo.addEventListener("click",calc);}
 function recalc(){syncIm();if(elBudget&&elBudget.value){calc();}}
+if(elSkin){elSkin.addEventListener("change",recalc);}
 for(var im=0;im<elIm.length;im++){
   elIm[im].addEventListener("change",recalc);
 }
@@ -647,7 +904,6 @@ function cmpS(a,b,mode){
   else if(mode==="pl"){d=px-py;}
   else if(mode==="ph"){d=py-px;}
   else if(mode==="name"){d=x[0].localeCompare(y[0],"ko");}
-  else if(mode==="val"){d=vper(x)-vper(y);}
   else{d=(y[4]?1:0)-(x[4]?1:0);}
   return d!==0?d:a-b;
 }
@@ -660,10 +916,20 @@ function renderProd(){
   for(var k=0;k<prodIdx.length;k++){
     var r=SINGLES[prodIdx[k]];
     if(f!==""&&norm(r[0]).indexOf(f)<0){continue;}
-    h+='<div class="card sm"><div class="ch"><div class="ct">'+r[0]+'</div></div>'+(r[4]?'<div class="tg"><span class="chip">인기</span></div>':'')+mts(sortProd==="val"?4:3,mt('소비자가',dash(r[1]))+mt('회원가',dash(r[2]))+mt('CV',r[3]>0?fmt(r[3]):'-')+(sortProd==="val"?mt('CV당 가격',won(Math.round(vper(r)))):''))+'</div>';
+    h+='<div class="card sm"><div class="ch"><div class="ct">'+r[0]+'</div></div>'+(r[4]?'<div class="tg"><span class="chip">인기</span></div>':'')+mts(3,mt('소비자가',dash(r[1]))+mt('회원가',dash(r[2]))+mt('CV',r[3]>0?fmt(r[3]):'-'))+'</div>';
   }
   elProdList.innerHTML=h===""?'<div class="empty">검색 결과가 없습니다.</div>':h;
 }
+
+var AUTO=[
+["라이프 원팩 1",240,"프로알지 2, 프로가드 2, 시너비트 1",427500],
+["라이프 원팩 2",202,"프로알지 1, 프로가드 1, 시너비트 1, 맥시멈 프로틴 2",363700],
+["라이프 원팩 3",217,"프로알지 1, 프로가드 1, 시너비트 1, 맥시멈 프로틴 1, 바이타팩 1",387500],
+["7데이즈 원팩 1",142,"프로알지 1, 프로가드 1, 시너비트 1",251000],
+["7데이즈 원팩 2",160,"프로알지 1, 프로가드 1, 시너비트 1, 비프라임 1",285500],
+["라마라 에멀전 세트",40,"라마라 모이스처 부스트 에멀전 1, 라마라 스킨 액티베이팅 토너 1",73500],
+["라마라 클렌저 세트",35,"라마라 데일리 너리싱 클렌저 1, 라마라 스킨 액티베이팅 토너 1",65100]
+];
 
 function buildPkg(){
   if(!elPkgList){return;}
@@ -677,6 +943,11 @@ function buildPkg(){
       }
     }
     if(part!==""){h+='<div class="gh">'+TIER_NAMES[t]+'</div>'+part;}
+  }
+  h+='<div class="gh">오토십 전용 패키지</div>';
+  for(var a=0;a<AUTO.length;a++){
+    var o=AUTO[a];
+    h+='<div class="card"><div class="ch"><div class="ct">'+o[0]+'</div><div class="cr"><span class="chip">오토십 전용</span></div></div><div class="cd">'+o[2]+'</div>'+mts(2,mt('오토십 패키지가',won(o[3]),1)+mt('CV',fmt(o[1])))+'</div>';
   }
   elPkgList.innerHTML=h;
 }
